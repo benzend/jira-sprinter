@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { authOptions } from '../auth/[...nextauth]/auth.config';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../../lib/prisma';
 
 const apiKeySchema = z.object({
   key: z.string().min(1),
