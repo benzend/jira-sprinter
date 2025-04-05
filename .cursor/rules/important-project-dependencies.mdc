@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- We have a [schema.prisma](mdc:prisma/schema.prisma) that shows all of the valid models currently in use, it's sqlite
+- Jira and OpenAI are the two main dependencies to consider. Here are all of them [package.json](mdc:package.json)
