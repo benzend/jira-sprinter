@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { z } from 'zod';
-import { authOptions } from '../auth/[...nextauth]/auth.config';
 import { prisma } from '../../../lib/prisma';
+
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 // Jira priority ID mapping
 const PRIORITY_MAP = {
@@ -23,9 +24,15 @@ const createTicketsSchema = z.object({
   tickets: z.array(ticketSchema),
 });
 
+async function getAuthSession() {
+  const { getServerSession } = await import('next-auth/next');
+  const { authOptions } = await import('../auth/[...nextauth]/auth.config');
+  return getServerSession(authOptions);
+}
+
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });

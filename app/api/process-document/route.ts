@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { z } from 'zod';
 import OpenAI from 'openai';
-import { authOptions } from '../auth/[...nextauth]/auth.config';
 import { prisma } from '../../../lib/prisma';
+
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 const documentSchema = z.object({
   content: z.string().min(1),
 });
+
+async function getAuthSession() {
+  const { getServerSession } = await import('next-auth/next');
+  const { authOptions } = await import('../auth/[...nextauth]/auth.config');
+  return getServerSession(authOptions);
+}
 
 // Define the structure for a Jira ticket
 interface JiraTicket {
@@ -45,7 +52,7 @@ Return a JSON object with this exact structure:
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
