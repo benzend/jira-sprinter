@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '../../../lib/prisma';
 
-export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 const apiKeySchema = z.object({

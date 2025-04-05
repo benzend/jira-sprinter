@@ -3,7 +3,6 @@ import { z } from 'zod';
 import OpenAI from 'openai';
 import { prisma } from '../../../lib/prisma';
 
-export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 const documentSchema = z.object({
