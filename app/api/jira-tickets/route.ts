@@ -117,6 +117,18 @@ export async function POST(req: Request) {
                 errorJson.errors?.[Object.keys(errorJson.errors)[0]] ||
                 errorJson.message ||
                 errorMessage;
+
+              // Add more detailed error information
+              if (response.status === 401) {
+                errorMessage +=
+                  ' (Unauthorized - Please check your Jira credentials and permissions)';
+              } else if (response.status === 403) {
+                errorMessage +=
+                  ' (Forbidden - You may not have permission to create issues in this project)';
+              } else if (response.status === 404) {
+                errorMessage +=
+                  ' (Not Found - The project or issue type may not exist)';
+              }
             } catch (e) {
               console.error('Failed to parse error response:', e);
             }

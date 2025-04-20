@@ -43,6 +43,16 @@ export default function DashboardPage() {
     email: string;
     projectKey: string;
   } | null>(null);
+  const [projectConfig, setProjectConfig] = useState<{
+    projectKey: string;
+    projectName: string;
+    issueTypes: Array<{
+      id: string;
+      name: string;
+      description: string;
+      subtask: boolean;
+    }>;
+  } | null>(null);
 
   const apiKeyForm = useForm<ApiKeyForm>({
     resolver: zodResolver(apiKeySchema),
@@ -60,10 +70,12 @@ export default function DashboardPage() {
     // Fetch user's API keys and Jira credentials
     const fetchData = async () => {
       try {
-        const [apiKeysResponse, jiraResponse] = await Promise.all([
-          fetch('/api/api-keys'),
-          fetch('/api/jira-credentials'),
-        ]);
+        const [apiKeysResponse, jiraResponse, projectConfigResponse] =
+          await Promise.all([
+            fetch('/api/api-keys'),
+            fetch('/api/jira-credentials'),
+            fetch('/api/jira-project-config'),
+          ]);
 
         if (apiKeysResponse.ok) {
           const data = await apiKeysResponse.json();
@@ -73,6 +85,11 @@ export default function DashboardPage() {
         if (jiraResponse.ok) {
           const data = await jiraResponse.json();
           setJiraCredentials(data.credentials);
+        }
+
+        if (projectConfigResponse.ok) {
+          const data = await projectConfigResponse.json();
+          setProjectConfig(data);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -437,6 +454,28 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-500">
                       Project Key: {jiraCredentials.projectKey}
                     </p>
+                    {projectConfig && (
+                      <>
+                        <p className="text-sm text-gray-500">
+                          Project Name: {projectConfig.projectName}
+                        </p>
+                        <div className="mt-2">
+                          <h4 className="text-sm font-medium text-gray-700">
+                            Available Issue Types:
+                          </h4>
+                          <ul className="mt-1 space-y-1">
+                            {projectConfig.issueTypes.map((type) => (
+                              <li
+                                key={type.id}
+                                className="text-sm text-gray-500"
+                              >
+                                {type.name} {type.subtask ? '(Subtask)' : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

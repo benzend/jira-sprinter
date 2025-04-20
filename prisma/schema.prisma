@@ -38,4 +38,16 @@ model JiraCredential {
   user         User     @relation(fields: [userId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  projectConfig JiraProjectConfig? // Add relation to project config
+}
+
+model JiraProjectConfig {
+  id           String   @id @default(cuid())
+  projectKey   String   // Jira project key
+  projectName  String   // Jira project name
+  issueTypes   Json     // Store issue types as JSON
+  jiraCredentialId String @unique
+  jiraCredential JiraCredential @relation(fields: [jiraCredentialId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 } 

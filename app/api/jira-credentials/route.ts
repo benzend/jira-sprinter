@@ -17,6 +17,48 @@ async function getAuthSession() {
   return getServerSession(authOptions);
 }
 
+async function fetchJiraProjectConfig(credentials: {
+  domain: string;
+  email: string;
+  apiToken: string;
+  projectKey: string;
+}) {
+  const response = await fetch(
+    `https://${credentials.domain}/rest/api/2/issue/createmeta?projectKeys=${credentials.projectKey}&expand=projects.issuetypes.fields`,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(
+          `${credentials.email}:${credentials.apiToken}`
+        ).toString('base64')}`,
+        Accept: 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Jira API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+    });
+    throw new Error('Failed to fetch Jira project configuration');
+  }
+
+  const data = await response.json();
+  const project = data.projects[0];
+  return {
+    projectKey: project.key,
+    projectName: project.name,
+    issueTypes: project.issuetypes.map((type: any) => ({
+      id: type.id,
+      name: type.name,
+      description: type.description,
+      subtask: type.subtask,
+    })),
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession();
@@ -28,6 +70,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { domain, email, apiToken, projectKey } =
       jiraCredentialsSchema.parse(body);
+
+    // First, verify the credentials by fetching project config
+    const projectConfig = await fetchJiraProjectConfig({
+      domain,
+      email,
+      apiToken,
+      projectKey,
+    });
 
     // Upsert Jira credentials (create or update)
     const credentials = await prisma.jiraCredential.upsert({
@@ -46,6 +96,24 @@ export async function POST(req: Request) {
         apiToken,
         projectKey,
         userId: session.user.id,
+      },
+    });
+
+    // Store the project configuration
+    await prisma.jiraProjectConfig.upsert({
+      where: {
+        jiraCredentialId: credentials.id,
+      },
+      update: {
+        projectKey: projectConfig.projectKey,
+        projectName: projectConfig.projectName,
+        issueTypes: projectConfig.issueTypes,
+      },
+      create: {
+        projectKey: projectConfig.projectKey,
+        projectName: projectConfig.projectName,
+        issueTypes: projectConfig.issueTypes,
+        jiraCredentialId: credentials.id,
       },
     });
 
@@ -69,7 +137,10 @@ export async function POST(req: Request) {
 
     console.error('Jira credentials creation error:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      {
+        message:
+          error instanceof Error ? error.message : 'Internal server error',
+      },
       { status: 500 }
     );
   }
